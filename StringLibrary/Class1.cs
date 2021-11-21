@@ -1,38 +1,48 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Linq;
 
-namespace Quantlib
+namespace LinearInterpolation
 {
-    public interface IInterpolator
+    public struct Point
     {
-        double Calculate(SortedList<double, double> data, double targetX);
+        public double x;
+        public double y;
+
+        public Point(double xval, double yval)
+        {
+            x = xval;
+            y = yval;
+        }
     }
 
-    public class LinearInterpolator : IInterpolator
+    public class Interpolation
     {
-        [Pure]
-        public double Calculate(SortedList<double, double> data, double targetX)
+        /// <summary>
+        /// Linear interpolation for an array of points
+        /// </summary>
+        /// <param name="xs">Array for argument values</param>
+        /// <param name="ys">Array for functions values</param>
+        /// <returns>Returns function which calculates interpolated value for given z</returns>
+        public static Func<Double, Double> GetInterpolation(Point[] points)
         {
-            if (!data.Any() || data.Keys.First() > targetX || data.Keys.Last() < targetX)
+            return (z) =>
             {
-                throw new ArgumentException("Bad arguments");
-            }
-            
-            var index = data.Keys.ToList().BinarySearch(targetX);
-
-            if (index >= 0)
-            {
-                return data.ElementAt(index).Value;
-            }
-
-            index = ~index;
-
-            var (x0, y0) = data.ElementAt(index - 1);
-            var (x1, y1) = data.ElementAt(index);
-            
-            return y0 + (targetX - x0) * (y1 - y0) / (x1 - x0);
+                var p = points;
+                int i = 0;
+                if (z < p[0].x)
+                {
+                    return p[i].y + (p[i + 1].y - p[i].y) / (p[i + 1].x - p[i].x) * (z - p[i].x);
+                }
+                for (; i < p.Length - 1; i++)
+                {
+                    if (z <= p[i + 1].x)
+                    {
+                        return p[i].y + (p[i + 1].y - p[i].y) / (p[i + 1].x - p[i].x) * (z - p[i].x);
+                    }
+                }
+                i = p.Length - 1;
+                // if we got beyond x_max
+                return p[i].y + (p[i + 1].y - p[i].y) / (p[i + 1].x - p[i].x) * (z - p[i].x);
+            };
         }
     }
 }
